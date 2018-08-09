@@ -528,11 +528,12 @@ public class TObject implements TComponent {
                             try {
 
                                 final Object value = field.get(obj);
-
-                                bufOfObject.append("\n").append(TAB).append(field.getName())
+                                if (value != null) { // only output nonull fields
+                                    bufOfObject.append("\n").append(TAB).append(field.getName())
                                         .append("=")
                                         .append(toString(value, deep + 1, expand).trim())
                                         .append(",");
+                                }
 
                             } catch (Throwable t) {
                                 //

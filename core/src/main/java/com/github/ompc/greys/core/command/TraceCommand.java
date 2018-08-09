@@ -9,11 +9,13 @@ import com.github.ompc.greys.core.command.annotation.NamedArg;
 import com.github.ompc.greys.core.exception.ExpressException;
 import com.github.ompc.greys.core.server.Session;
 import com.github.ompc.greys.core.textui.TTree;
+import com.github.ompc.greys.core.textui.ext.TObject;
 import com.github.ompc.greys.core.util.InvokeCost;
 import com.github.ompc.greys.core.util.PointCut;
 import com.github.ompc.greys.core.util.matcher.ClassMatcher;
 import com.github.ompc.greys.core.util.matcher.GaMethodMatcher;
 import com.github.ompc.greys.core.util.matcher.PatternMatcher;
+import org.apache.commons.lang3.StringUtils;
 
 import java.lang.instrument.Instrumentation;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -159,12 +161,23 @@ public class TraceCommand implements Command {
 
                             @Override
                             public void before(Advice advice) throws Throwable {
-
+                                StringBuilder builder = new StringBuilder(advice.getClazz().getName());
+                                builder.append(':');
+                                builder.append(advice.getClazz().getName());
+                                builder.append("()");
+                                if (advice.params != null) {
+                                    for (int i = 0; i < advice.params.length; i++) {
+                                        builder.append("\nparams[");
+                                        builder.append(i);
+                                        builder.append("]: ");
+                                        builder.append(new TObject(advice.params[i], 1).rendering());
+                                    }
+                                }
                                 invokeCost.begin();
                                 traceRef.set(
                                         new Trace(
                                                 new TTree(true, getTitle(advice))
-                                                        .begin(advice.getClazz().getName() + ":" + advice.getMethod().getName() + "()")
+                                                        .begin(builder.toString())
                                         )
                                 );
                             }
@@ -173,6 +186,8 @@ public class TraceCommand implements Command {
                             public void afterReturning(Advice advice) throws Throwable {
                                 final Trace trace = traceRef.get();
                                 if (!trace.tTree.isTop()) {
+                                    String returnStr = "\nreturnObj: " + new TObject(advice.returnObj, 1).rendering();
+                                    trace.tTree.set(trace.tTree.get() + returnStr);
                                     trace.tTree.end();
                                 }
                             }
